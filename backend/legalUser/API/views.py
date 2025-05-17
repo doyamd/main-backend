@@ -13,12 +13,16 @@ from legalUser.API.serializers import(
     UserEmailSerializer,
     OTPSerializer,
     AdminUserSerializer,
+    ClientSerializer,
+    AttorneySerializer,
     
 )
 from legalUser.common.emailsender import send_email
 
-from legalUser.API.permissions import IsOwnerorReadOnly, IsAdmin
+from legalUser.API.permissions import IsOwnerorReadOnly, IsAdmin, IsAdminOrOwner
 from legalUser.models import (
+    Client,
+    Attorney,
     User, 
     OTP)
 from legalUser.common.commonresponse import BaseResponse
@@ -68,9 +72,38 @@ class UserListAV(generics.ListAPIView):
     
     
 class UserDetailAV(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAdminOrOwner]
     serializer_class = UserDetailSerializer
     queryset = User.objects.all()
-    permission_classes = [IsOwnerorReadOnly]
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+
+        # If admin, just return user data
+        if instance.role == 'admin':
+            return Response(data)
+
+        # Add client data if user is a client
+        if instance.role == 'client':
+            try:
+                client = Client.objects.get(user=instance)
+                client_serializer = ClientSerializer(client)
+                data['client_data'] = client_serializer.data
+            except Client.DoesNotExist:
+                data['client_data'] = None
+
+        # Add attorney data if user is an attorney
+        elif instance.role == 'attorney':
+            try:
+                attorney = Attorney.objects.get(user=instance)
+                attorney_serializer = AttorneySerializer(attorney)
+                data['attorney_data'] = attorney_serializer.data
+            except Attorney.DoesNotExist:
+                data['attorney_data'] = None
+
+        return Response(data)
     
 class UserLoginAV(APIView):
     # permission_classes = [IsAuthenticated]
