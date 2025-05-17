@@ -71,7 +71,7 @@ class UserListAV(generics.ListAPIView):
         return queryset
     
     
-class UserDetailAV(generics.RetrieveUpdateDestroyAPIView):
+class UserDetailAV(generics.RetrieveDestroyAPIView):
     permission_classes = [IsAdminOrOwner]
     serializer_class = UserDetailSerializer
     queryset = User.objects.all()
