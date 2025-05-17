@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: legal-user-backend
+    env: docker
+    plan: free  # or 'starter' or other paid plans
+    region: oregon  # or your preferred region
+    branch: main
+    buildCommand: ""  # Docker handles it
+    startCommand: ""  # Docker CMD handles it
+    envVars:
+      - key: DEBUG
+        value: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: your-db-name
+          property: connectionString
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: 587
+      - key: EMAIL_HOST_USER
+        value: your_email@gmail.com
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
