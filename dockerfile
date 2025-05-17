@@ -1,29 +1,28 @@
 # Use official Python image
 FROM python:3.12-slim
 
-# Set environment variables
+# Environment setup
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Set working directory inside the container
 WORKDIR /app
 
-# Install system dependencies
+# System dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy and install Python dependencies
+# Install dependencies
 COPY requirements.txt /app/
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Copy the whole project
+# Copy project files
 COPY . /app/
 
-# Change working directory to where manage.py is
+# Set working directory where manage.py is
 WORKDIR /app/backend
 
-# Run migrations and start the Gunicorn server
-CMD ["sh", "-c", "python manage.py migrate && gunicorn legal.wsgi:application --bind 0.0.0.0:$PORT"]
+# Run migrations and start server
+CMD ["sh", "-c", "python manage.py makemigrations && python manage.py migrate && gunicorn legal.wsgi:application --bind 0.0.0.0:$PORT"]
