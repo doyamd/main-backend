@@ -13,3 +13,12 @@ class IsAdmin(permissions.BasePermission):
             return request.user.role == 'admin'
         except:
             return False
+        
+class IsAdminOrOwner(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        # Allow admin users to access any object
+        if request.user.role == 'admin':
+            return True
+        # Allow users to access their own data
+        return obj.id == request.user.id
+
