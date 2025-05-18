@@ -157,6 +157,41 @@ class UserDetailAV(generics.RetrieveUpdateDestroyAPIView):
 
         return Response(response.to_dict(), status=response.status_code)
     
+class UserUploadImageAV(APIView):
+    permission_classes = [IsAdminOrOwner]
+    
+    def post(self, request):
+        response = BaseResponse()
+        user = request.user
+        image = request.FILES.get('image')
+        
+        if not image:
+            response = BaseResponse(
+                status_code=400,
+                success=False,
+                message="No image provided"
+            )
+            return Response(response.to_dict(), status=response.status_code)
+            
+        try:
+            file_url, public_id = upload_file(image, folder="user_images")
+            user.image = file_url
+            user.save()
+            response = BaseResponse(
+                status_code=200, 
+                success=True, 
+                message="Image uploaded successfully", 
+                data={"image_url": file_url}
+            )
+        except Exception as e:
+            response = BaseResponse(
+                status_code=500, 
+                success=False, 
+                message=f"Failed to upload image: {str(e)}"
+            )
+            
+        return Response(response.to_dict(), status=response.status_code)
+
 class UserLoginAV(APIView):
     # permission_classes = [IsAuthenticated]
     def post(self, request):
@@ -235,7 +270,6 @@ class AttorneyUploadLicenseAV(APIView):
             )
 
         return Response(response.to_dict(), status=response.status_code)
-    
 # otp views
 
 class OTPVerifyAV(APIView):
