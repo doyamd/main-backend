@@ -20,7 +20,7 @@ from legalUser.API.serializers import(
 )
 from legalUser.common.emailsender import send_email
 
-from legalUser.API.permissions import IsOwnerorReadOnly, IsAdmin, IsAdminOrOwner
+from legalUser.API.permissions import IsOwnerorReadOnly, IsAdmin, IsAdminOrOwner, IsClientOrAdmin, IsAttorneyOrAdmin
 from legalUser.models import (
     Client,
     Attorney,
@@ -270,6 +270,73 @@ class AttorneyUploadLicenseAV(APIView):
             )
 
         return Response(response.to_dict(), status=response.status_code)
+    
+class AttorneyListAV(generics.ListAPIView):
+    permission_classes = [IsClientOrAdmin]
+    serializer_class = AttorneySerializer
+    queryset = Attorney.objects.all()
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # If user is client, only show available and approved attorneys with basic user info
+        if self.request.user.role == 'client':
+            queryset = queryset.filter(is_available=True, is_approved=True)
+        # If user is admin, allow filtering by params and show all fields except password
+        elif self.request.user.role == 'admin':
+            is_available = self.request.query_params.get('is_available')
+            is_approved = self.request.query_params.get('is_approved')
+            
+            if is_available is not None:
+                queryset = queryset.filter(is_available=is_available.lower() == 'true')
+            if is_approved is not None:
+                queryset = queryset.filter(is_approved=is_approved.lower() == 'true')
+        
+        # Always prefetch user data to avoid N+1 queries
+        queryset = queryset.select_related('user')
+        
+        return queryset
+
+class ToggleAttorneyApprovalAV(APIView):
+    permission_classes = [IsAdmin]
+    
+    def post(self, request, pk):
+        response = BaseResponse()
+        try:
+            user = User.objects.get(id=pk)
+            if user.role != 'attorney':
+                response = BaseResponse(
+                    status_code=400,
+                    success=False,
+                    message="User is not an attorney"
+                )
+            attorney = Attorney.objects.get(user=user)
+            attorney.is_approved = not attorney.is_approved
+            attorney.save()
+            
+            response = BaseResponse(
+                status_code=200,
+                success=True,
+                message="Attorney approval status updated successfully",
+                data={
+                    "is_approved": attorney.is_approved,
+                    "attorney_id": str(attorney.id)
+                }
+            )
+        except Attorney.DoesNotExist:
+            response = BaseResponse(
+                status_code=404,
+                success=False,
+                message="Attorney not found"
+            )
+        except ValueError:
+            response = BaseResponse(
+                status_code=400,
+                success=False,
+                message="Invalid attorney ID format"
+            )
+        return Response(response.to_dict(), status=response.status_code)
+
 # otp views
 
 class OTPVerifyAV(APIView):
