@@ -3,6 +3,12 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from legalUser.constants.expertise import AttorneyExpertise
 
+def validate_expertise_list(value):
+    if not isinstance(value, list):
+        raise ValueError("Expertise must be a list")
+    if not all(e in AttorneyExpertise.values() for e in value):
+        raise ValueError("Invalid expertise value in list")
+
 class User(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     first_name = models.CharField(max_length=255)
@@ -47,7 +53,11 @@ class Attorney(models.Model):
     profile_completion = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     license_document = models.TextField(max_length=255)
     is_approved = models.BooleanField(default=False)
-    expertise = models.JSONField(default=list, blank=True, validators=[lambda x: all(e in AttorneyExpertise.values() for e in x)])
+    expertise = models.JSONField(
+        default=list,
+        blank=True,
+        validators=[validate_expertise_list]
+    )
 
     def __str__(self):
         return self.user.email
