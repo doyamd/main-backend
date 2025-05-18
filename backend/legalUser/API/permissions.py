@@ -22,3 +22,12 @@ class IsAdminOrOwner(permissions.BasePermission):
         # Allow users to access their own data
         return obj.id == request.user.id
 
+# is client or admin
+class IsClientOrAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role == 'client' or request.user.role == 'admin'
+    
+# is attorney or admin
+class IsAttorneyOrAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role == 'attorney' or request.user.role == 'admin'
