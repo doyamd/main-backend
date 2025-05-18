@@ -73,6 +73,21 @@ class UserDetailSerializer(serializers.ModelSerializer):
         fields = "__all__"
         extra_kwargs = {'password':{'write_only':True}}
 
+class UserUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        #exclude role
+        
+        extra_kwargs = {'password':{'write_only':True}}
+
+
+class AttorneyUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Attorney
+        #exclude user, is_approved, rating, profile_completion
+        fields = ["starting_price", "is_available", "offers_probono", "address", "license_document"]
+        extra_kwargs = {'password':{'write_only':True}}
+
 class ClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Client

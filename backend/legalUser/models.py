@@ -27,6 +27,9 @@ class Client(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     is_probono = models.BooleanField(default=False)
+    probono_document = models.TextField(max_length=255, null=True, blank=True)
+    probono_approved_at = models.DateTimeField(null=True, blank=True)
+    probono_expires_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.user.email

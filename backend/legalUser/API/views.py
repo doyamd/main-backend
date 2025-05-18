@@ -14,6 +14,7 @@ from legalUser.API.serializers import(
     OTPSerializer,
     AdminUserSerializer,
     ClientSerializer,
+    AttorneyUpdateSerializer,
     AttorneySerializer,
     
 )
@@ -70,8 +71,9 @@ class UserListAV(generics.ListAPIView):
             queryset = queryset.filter(role=role)
         return queryset
     
-    
-class UserDetailAV(generics.RetrieveDestroyAPIView):
+
+
+class UserDetailAV(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminOrOwner]
     serializer_class = UserDetailSerializer
     queryset = User.objects.all()
@@ -104,6 +106,41 @@ class UserDetailAV(generics.RetrieveDestroyAPIView):
                 data['attorney_data'] = None
 
         return Response(data)
+
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        response = BaseResponse()
+
+        if serializer.is_valid():
+            # Update user data
+            serializer.save()
+            data = serializer.data
+            if instance.role == 'attorney':
+                try:
+                    attorney = Attorney.objects.get(user=instance)
+                    attorney_serializer = AttorneyUpdateSerializer(attorney, data=request.data, partial=True)
+                    if attorney_serializer.is_valid():
+                        attorney_serializer.save()
+                        data['attorney_data'] = attorney_serializer.data
+                except Attorney.DoesNotExist:
+                    pass
+
+            response = BaseResponse(
+                status_code=200,
+                success=True,
+                message="User updated successfully",
+                data=data
+            )
+        else:
+            response = BaseResponse(
+                status_code=400,
+                success=False,
+                message="Invalid user details",
+                data=serializer.errors
+            )
+
+        return Response(response.to_dict(), status=response.status_code)
     
 class UserLoginAV(APIView):
     # permission_classes = [IsAuthenticated]
