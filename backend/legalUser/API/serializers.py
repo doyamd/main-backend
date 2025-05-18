@@ -3,7 +3,7 @@ from django.contrib.auth.hashers import check_password, make_password
 from rest_framework import serializers
 from datetime import datetime, timedelta
 
-from legalUser.models import OTP, User, Client, Attorney, Education, Experience, Expertise
+from legalUser.models import OTP, User, Client, Attorney, Education, Experience
 
 # User related serializers
 class UserSerializer(serializers.ModelSerializer):
