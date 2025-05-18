@@ -55,8 +55,7 @@ class Attorney(models.Model):
     is_approved = models.BooleanField(default=False)
     expertise = models.JSONField(
         default=list,
-        blank=True,
-        validators=[validate_expertise_list]
+        blank=True
     )
 
     def __str__(self):
