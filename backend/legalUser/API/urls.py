@@ -10,7 +10,9 @@ from legalUser.API.views import (
     OTPCreateAV,
     AdminUserCreateAV,
     AttorneyUploadLicenseAV,
-    UserUploadImageAV
+    UserUploadImageAV,
+    AttorneyListAV,
+    ToggleAttorneyApprovalAV
     )
 
 urlpatterns = [
@@ -25,6 +27,8 @@ urlpatterns = [
 
     # attorney paths
     path("attorney/uploadlicense", AttorneyUploadLicenseAV.as_view(), name="UploadLicense"),
+    path("attorney/list", AttorneyListAV.as_view(), name="ListAttorneys"),
+    path("attorney/toggleapproval/<uuid:pk>", ToggleAttorneyApprovalAV.as_view(), name="ToggleAttorneyApproval"),
 
     # admin paths
     path("createadmin", AdminUserCreateAV.as_view(), name="CreateAdmin"),
