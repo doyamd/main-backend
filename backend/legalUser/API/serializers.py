@@ -118,9 +118,12 @@ class UserEmailSerializer(serializers.Serializer):
 
 # Attorney related serializers
 class AttorneySerializer(serializers.ModelSerializer):
+    user = UserDetailSerializer(read_only=True)
+    
     class Meta:
         model = Attorney
         fields = "__all__"
+        depth = 1
 
 class AttorneyUpdateSerializer(serializers.ModelSerializer):
     class Meta:
