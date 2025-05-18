@@ -85,8 +85,14 @@ class AttorneyUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attorney
         #exclude user, is_approved, rating, profile_completion
-        fields = ["starting_price", "is_available", "offers_probono", "address", "license_document"]
+        fields = ["starting_price", "is_available", "offers_probono", "address"]
         extra_kwargs = {'password':{'write_only':True}}
+
+class AttorneyUploadLicenseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Attorney
+        fields = ["license_document"]
+        extra_kwargs = {'license_document':{'write_only':True}}
 
 class ClientSerializer(serializers.ModelSerializer):
     class Meta:
@@ -122,9 +128,6 @@ class UserLoginSerializer(serializers.Serializer):
         elif user.role == 'attorney':
             if not Attorney.objects.filter(user=user).exists():
                 raise serializers.ValidationError("User is not an attorney")
-            attorney = Attorney.objects.get(user=user)
-            if not attorney.is_approved:
-                raise serializers.ValidationError("Attorney is not Approved")
         
         return data
     
