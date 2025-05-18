@@ -47,12 +47,7 @@ class Attorney(models.Model):
     profile_completion = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     license_document = models.TextField(max_length=255)
     is_approved = models.BooleanField(default=False)
-    expertise = models.CharField(
-        max_length=50,
-        choices=AttorneyExpertise.choices(),
-        null=True,
-        blank=True
-    )
+    expertise = models.JSONField(default=list, blank=True, validators=[lambda x: all(e in AttorneyExpertise.values() for e in x)])
 
     def __str__(self):
         return self.user.email
