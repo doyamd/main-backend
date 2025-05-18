@@ -8,7 +8,8 @@ from legalUser.API.views import (
     UserLoginAV,
     OTPVerifyAV,
     OTPCreateAV,
-    AdminUserCreateAV
+    AdminUserCreateAV,
+    AttorneyUploadLicenseAV
     )
 
 urlpatterns = [
@@ -19,6 +20,9 @@ urlpatterns = [
     path("getuserbyid/<uuid:pk>", UserDetailAV.as_view(),name="UserDetails"),
     path("login", UserLoginAV.as_view(), name="Login"),
     path("refreshtoken", TokenRefreshView.as_view(), name="RefreshToken"),
+
+    # attorney paths
+    path("attorney/uploadlicense", AttorneyUploadLicenseAV.as_view(), name="UploadLicense"),
 
     # admin paths
     path("createadmin", AdminUserCreateAV.as_view(), name="CreateAdmin"),
