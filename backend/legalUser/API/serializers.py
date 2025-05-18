@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 from legalUser.models import OTP, User, Client, Attorney, Education, Experience, Expertise
 
+# User related serializers
 class UserSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True)
     class Meta:
@@ -40,8 +41,7 @@ class UserSerializer(serializers.ModelSerializer):
             Attorney.objects.create(user=user)
             
         return user
-    
-# create user with admin role
+
 class AdminUserSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True)
     class Meta:
@@ -80,30 +80,6 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         
         extra_kwargs = {'password':{'write_only':True}}
 
-
-class AttorneyUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Attorney
-        #exclude user, is_approved, rating, profile_completion
-        fields = ["starting_price", "is_available", "offers_probono", "address"]
-        extra_kwargs = {'password':{'write_only':True}}
-
-class AttorneyUploadLicenseSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Attorney
-        fields = ["license_document"]
-        extra_kwargs = {'license_document':{'write_only':True}}
-
-class ClientSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Client
-        fields = "__all__"
-
-class AttorneySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Attorney
-        fields = "__all__"
-
 class UserLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
@@ -130,7 +106,7 @@ class UserLoginSerializer(serializers.Serializer):
                 raise serializers.ValidationError("User is not an attorney")
         
         return data
-    
+
 class UserEmailSerializer(serializers.Serializer):
     email = serializers.EmailField()
         
@@ -139,7 +115,34 @@ class UserEmailSerializer(serializers.Serializer):
             raise serializers.ValidationError("Email does not exist")
         
         return email
-    
+
+# Attorney related serializers
+class AttorneySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Attorney
+        fields = "__all__"
+
+class AttorneyUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Attorney
+        #exclude user, is_approved, rating, profile_completion
+        fields = ["starting_price", "is_available", "offers_probono", "address"]
+        extra_kwargs = {'password':{'write_only':True}}
+
+class AttorneyUploadLicenseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Attorney
+        fields = ["license_document"]
+        extra_kwargs = {'license_document':{'write_only':True}}
+
+# Client related serializers
+class ClientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Client
+        fields = "__all__"
+
+
+# OTP related serializers
 class OTPSerializer(serializers.ModelSerializer):
     email = serializers.CharField(max_length=100)
     class Meta:
