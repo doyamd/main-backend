@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from legalUser.constants.expertise import AttorneyExpertise
 
 class User(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -46,6 +47,12 @@ class Attorney(models.Model):
     profile_completion = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     license_document = models.TextField(max_length=255)
     is_approved = models.BooleanField(default=False)
+    expertise = models.CharField(
+        max_length=50,
+        choices=AttorneyExpertise.choices(),
+        null=True,
+        blank=True
+    )
 
     def __str__(self):
         return self.user.email
@@ -70,20 +77,6 @@ class Experience(models.Model):
     def __str__(self):
         return self.organization
     
-class Expertise(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-
-    def __str__(self):
-        return self.name
-    
-class AttorneyExpertise(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    attorney = models.ForeignKey(Attorney, on_delete=models.CASCADE)
-    expertise = models.ForeignKey(Expertise, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.attorney.user.email} - {self.expertise.name}"
 
 class AttorneyEducation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
