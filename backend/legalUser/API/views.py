@@ -28,6 +28,7 @@ from legalUser.models import (
     OTP)
 from legalUser.common.commonresponse import BaseResponse
 from legalUser.common.otpgenerator import verify_OTP_Template, createOTP
+from utils.upload import upload_file
 
 
 
@@ -71,7 +72,64 @@ class UserListAV(generics.ListAPIView):
             queryset = queryset.filter(role=role)
         return queryset
     
+class AttorneyUploadLicenseAV(APIView):
+    permission_classes = [IsAdminOrOwner]
 
+    def post(self, request):
+        response = BaseResponse()
+        
+        # Check if user is an attorney
+        if request.user.role != 'attorney':
+            response = BaseResponse(
+                status_code=403,
+                success=False,
+                message="Only attorneys can upload license documents"
+            )
+            return Response(response.to_dict(), status=response.status_code)
+
+        # Get the file from request
+        license_file = request.FILES.get('license_document')
+        if not license_file:
+            response = BaseResponse(
+                status_code=400,
+                success=False,
+                message="No file provided"
+            )
+            return Response(response.to_dict(), status=response.status_code)
+
+        try:
+            # Upload file to Cloudinary
+            file_url, public_id = upload_file(license_file, folder="attorney_licenses")
+
+            # Get attorney profile or return error
+            try:
+                attorney = Attorney.objects.get(user=request.user)
+            except Attorney.DoesNotExist:
+                response = BaseResponse(
+                    status_code=404,
+                    success=False,
+                    message="Attorney profile not found"
+                )
+                return Response(response.to_dict(), status=response.status_code)
+            
+            # Update license document URL
+            attorney.license_document = file_url
+            attorney.save()
+
+            response = BaseResponse(
+                status_code=200,
+                success=True,
+                message="License document uploaded successfully",
+                data={"license_url": file_url}
+            )
+        except Exception as e:
+            response = BaseResponse(
+                status_code=500,
+                success=False,
+                message=f"Failed to upload license document: {str(e)}"
+            )
+
+        return Response(response.to_dict(), status=response.status_code)
 
 class UserDetailAV(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminOrOwner]
