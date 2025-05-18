@@ -120,10 +120,26 @@ class UserDetailAV(generics.RetrieveUpdateDestroyAPIView):
                     attorney = Attorney.objects.get(user=instance)
                     attorney_serializer = AttorneyUpdateSerializer(attorney, data=request.data, partial=True)
                     if attorney_serializer.is_valid():
+                        # Handle expertise update
+                        if 'expertise' in request.data:
+                            attorney.expertise = request.data['expertise']
                         attorney_serializer.save()
                         data['attorney_data'] = attorney_serializer.data
+                    else:
+                        response = BaseResponse(
+                            status_code=400,
+                            success=False,
+                            message="Invalid attorney data",
+                            data=attorney_serializer.errors
+                        )
+                        return Response(response.to_dict(), status=response.status_code)
                 except Attorney.DoesNotExist:
-                    pass
+                    response = BaseResponse(
+                        status_code=404,
+                        success=False,
+                        message="Attorney profile not found"
+                    )
+                    return Response(response.to_dict(), status=response.status_code)
 
             response = BaseResponse(
                 status_code=200,

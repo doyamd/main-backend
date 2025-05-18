@@ -3,7 +3,7 @@ from django.contrib.auth.hashers import check_password, make_password
 from rest_framework import serializers
 from datetime import datetime, timedelta
 
-from legalUser.models import OTP, User, Client, Attorney, Education, Experience
+from legalUser.models import OTP, User, Client, Attorney, Education, Experience, AttorneyExpertise
 
 # User related serializers
 class UserSerializer(serializers.ModelSerializer):
@@ -125,9 +125,29 @@ class AttorneySerializer(serializers.ModelSerializer):
 class AttorneyUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attorney
-        #exclude user, is_approved, rating, profile_completion
-        fields = ["starting_price", "is_available", "offers_probono", "address"]
-        extra_kwargs = {'password':{'write_only':True}}
+        fields = ["starting_price", "is_available", "offers_probono", "address", "expertise"]
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'expertise': {'required': False}
+        }
+
+    def validate_expertise(self, value):
+        if value is None:
+            return value
+            
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Expertise must be a list")
+            
+        valid_expertise = AttorneyExpertise.values()
+        invalid_values = [e for e in value if e not in valid_expertise]
+        
+        if invalid_values:
+            raise serializers.ValidationError({
+                'invalid_values': invalid_values,
+                'valid_values': valid_expertise
+            })
+            
+        return value
 
 class AttorneyUploadLicenseSerializer(serializers.ModelSerializer):
     class Meta:
