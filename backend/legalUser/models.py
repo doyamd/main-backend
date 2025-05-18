@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 class User(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -42,7 +43,7 @@ class Attorney(models.Model):
     offers_probono = models.BooleanField(default=False)
     address = models.TextField(max_length=255)
     rating = models.FloatField(default=0)
-    profile_completion = models.FloatField(default=0)
+    profile_completion = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     license_document = models.TextField(max_length=255)
     is_approved = models.BooleanField(default=False)
 
