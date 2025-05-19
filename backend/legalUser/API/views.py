@@ -417,7 +417,47 @@ class AttorneyEducationExperienceAV(APIView):
             response.update(500, False, str(e))
 
         return Response(response.to_dict(), status=response.status_code)
-                        
+    
+    # delete education and experience
+    def delete(self, request, pk):
+        response = BaseResponse()
+        try:
+            user = request.user
+            if not hasattr(user, 'attorney'):
+                response.update(400, False, "User is not an attorney")
+                return Response(response.to_dict(), status=response.status_code)
+
+            attorney = user.attorney
+
+            def try_delete(key, model_class):
+                try:
+                    item = model_class.objects.get(id=pk)
+                    if item.attorney != attorney:
+                        response.update(403, False, f"You don't have permission to delete this {key}")
+                        raise ValueError
+                    item.delete()
+                    response.update(200, True, f"{key.capitalize()} deleted successfully")
+                    return True
+                except model_class.DoesNotExist:
+                    return False
+
+            # Try to delete education
+            if try_delete('education', Education):
+                return Response(response.to_dict(), status=response.status_code)
+
+            # Try to delete experience
+            if try_delete('experience', Experience):
+                return Response(response.to_dict(), status=response.status_code)
+
+            # Neither found
+            response.update(404, False, "Neither education nor experience record found with the given ID")
+
+        except ValueError:
+            pass  # Response already set
+        except Exception as e:
+            response.update(500, False, str(e))
+
+        return Response(response.to_dict(), status=response.status_code)            
             
     
 class AttorneyEducationExperienceCreateAV(APIView):
