@@ -15,16 +15,20 @@ from legalUser.API.serializers import(
     AdminUserSerializer,
     ClientSerializer,
     AttorneyUpdateSerializer,
-    AttorneySerializer
+    AttorneySerializer,
+    EducationSerializer,
+    ExperienceSerializer
     
 )
 from legalUser.common.emailsender import send_email
 
-from legalUser.API.permissions import IsOwnerorReadOnly, IsAdmin, IsAdminOrOwner, IsClientOrAdmin, IsAttorneyOrAdmin
+from legalUser.API.permissions import IsOwnerorReadOnly, IsAdmin, IsAdminOrOwner, IsClientOrAdmin, IsAttorneyOrAdmin, IsClientOrAdminOrOwner
 from legalUser.models import (
     Client,
     Attorney,
     User,
+    Education,
+    Experience,
     OTP)
 from legalUser.common.commonresponse import BaseResponse
 from legalUser.common.otpgenerator import verify_OTP_Template, createOTP
@@ -336,6 +340,73 @@ class ToggleAttorneyApprovalAV(APIView):
                 message="Invalid attorney ID format"
             )
         return Response(response.to_dict(), status=response.status_code)
+
+class AttorneyEducationExperienceListAV(APIView):
+    permission_classes = [IsClientOrAdminOrOwner]
+    serializer_class = EducationSerializer
+    experience_serializer_class = ExperienceSerializer
+    queryset = Education.objects.all()
+
+    #get all education of an attorney
+    def get(self, request, pk):
+        response = BaseResponse()
+        try:
+            user = User.objects.get(id=pk)
+            if user.role != 'attorney':
+                response = BaseResponse(status_code=400, success=False, message="User is not an attorney")
+                return Response(response.to_dict(), status=response.status_code)
+            attorney = Attorney.objects.get(user=user)
+            education = Education.objects.filter(attorney=attorney)
+            serializer = self.serializer_class(education, many=True)
+            experience = Experience.objects.filter(attorney=attorney)
+            experience_serializer = self.experience_serializer_class(experience, many=True)
+            response = BaseResponse(status_code=200, success=True, message="Education and experience retrieved successfully", data={"education":serializer.data, "experience":experience_serializer.data})
+        except Attorney.DoesNotExist:
+            response = BaseResponse(status_code=404, success=False, message="Attorney not found")
+        return Response(response.to_dict(), status=response.status_code)
+    
+class AttorneyEducationExperienceCreateAV(APIView):
+    permission_classes = [IsAttorneyOrAdmin]
+
+    def post(self, request):
+        response = BaseResponse()
+        user = request.user
+
+        if not hasattr(user, 'attorney'):
+            response.update(400, False, "User is not an attorney")
+            return Response(response.to_dict(), status=response.status_code)
+
+        attorney = user.attorney
+        data = request.data
+        result_data = {}
+        messages = []
+
+        def handle_serializer(key, serializer_class):
+            if key in data:
+                serializer = serializer_class(data=data[key])
+                if serializer.is_valid():
+                    serializer.save(attorney=attorney)
+                    result_data[key] = serializer.data
+                    messages.append(f"{key.capitalize()} added successfully")
+                else:
+                    response.update(400, False, f"Invalid {key} details", serializer.errors)
+                    raise ValueError  # Trigger early exit
+       
+        try:
+            handle_serializer('education', EducationSerializer)
+            handle_serializer('experience', ExperienceSerializer)
+
+            if result_data:
+                response.update(200, True, " and ".join(messages), result_data)
+            else:
+                response.update(400, False, "No valid education or experience data provided")
+
+        except ValueError:
+            pass  # response is already prepared with error inside handler
+
+        return Response(response.to_dict(), status=response.status_code)
+    
+    
 
 # otp views
 
