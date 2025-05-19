@@ -158,6 +158,17 @@ class AttorneyUploadLicenseSerializer(serializers.ModelSerializer):
         fields = ["license_document"]
         extra_kwargs = {'license_document':{'write_only':True}}
 
+## Attorney Education and Experience serializers
+class EducationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Education
+        fields = ['id', 'institution', 'degree', 'year']
+
+class ExperienceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Experience
+        fields = ['id', 'organization', 'title', 'years']
+
 # Client related serializers
 class ClientSerializer(serializers.ModelSerializer):
     class Meta:
