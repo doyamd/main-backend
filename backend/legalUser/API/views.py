@@ -424,8 +424,7 @@ class AttorneyEducationExperienceAV(APIView):
         except Exception as e:
             response.update(500, False, str(e))
 
-        return Response(response.to_dict(), status=response.status_code)           
-            
+        return Response(response.to_dict(), status=response.status_code)                    
     
 class AttorneyEducationExperienceCreateAV(APIView):
     permission_classes = [IsAttorneyOrAdmin]
@@ -468,7 +467,6 @@ class AttorneyEducationExperienceCreateAV(APIView):
             pass  # Response already set
 
         return Response(response.to_dict(), status=response.status_code)
-    
 
 # otp views
 
