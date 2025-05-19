@@ -341,7 +341,7 @@ class ToggleAttorneyApprovalAV(APIView):
             )
         return Response(response.to_dict(), status=response.status_code)
 
-class AttorneyEducationExperienceListAV(APIView):
+class AttorneyEducationExperienceAV(APIView):
     permission_classes = [IsClientOrAdminOrOwner]
     serializer_class = EducationSerializer
     experience_serializer_class = ExperienceSerializer
@@ -364,6 +364,61 @@ class AttorneyEducationExperienceListAV(APIView):
         except Attorney.DoesNotExist:
             response = BaseResponse(status_code=404, success=False, message="Attorney not found")
         return Response(response.to_dict(), status=response.status_code)
+    
+    # update education and experience
+    def patch(self, request, pk):
+        response = BaseResponse()
+        try:
+            user = request.user
+            if not hasattr(user, 'attorney'):
+                response.update(400, False, "User is not an attorney")
+                return Response(response.to_dict(), status=response.status_code)
+
+            attorney = user.attorney
+            data = request.data
+
+            def handle_serializer(key, serializer_class, model_class):
+                item_id = pk
+                if not item_id:
+                    response.update(400, False, f"{key.capitalize()} ID is required")
+                    raise ValueError
+
+                try:
+                    item = model_class.objects.get(id=item_id)
+                    if item.attorney != attorney:
+                        response.update(403, False, f"You don't have permission to update this {key}")
+                        raise ValueError
+
+                    serializer = serializer_class(item, data=data.get(key, {}), partial=True)
+                    if serializer.is_valid():
+                        serializer.save()
+                        response.update(200, True, f"{key.capitalize()} updated successfully", serializer.data)
+                        return True  # successful update
+                    else:
+                        response.update(400, False, f"Invalid {key} details", serializer.errors)
+                        raise ValueError
+                except model_class.DoesNotExist:
+                    return False  # not found
+
+            # Try education first
+            if handle_serializer('education', EducationSerializer, Education):
+                return Response(response.to_dict(), status=response.status_code)
+
+            # If not found, try experience
+            if handle_serializer('experience', ExperienceSerializer, Experience):
+                return Response(response.to_dict(), status=response.status_code)
+
+            # If neither found
+            response.update(404, False, "Neither education nor experience record found with the given ID")
+
+        except ValueError:
+            pass  # response already updated
+        except Exception as e:
+            response.update(500, False, str(e))
+
+        return Response(response.to_dict(), status=response.status_code)
+                        
+            
     
 class AttorneyEducationExperienceCreateAV(APIView):
     permission_classes = [IsAttorneyOrAdmin]
