@@ -12,7 +12,9 @@ from legalUser.API.views import (
     AttorneyUploadLicenseAV,
     UserUploadImageAV,
     AttorneyListAV,
-    ToggleAttorneyApprovalAV
+    ToggleAttorneyApprovalAV,
+    AttorneyEducationExperienceListAV,
+    AttorneyEducationExperienceCreateAV
     )
 
 urlpatterns = [
@@ -29,7 +31,8 @@ urlpatterns = [
     path("attorney/uploadlicense", AttorneyUploadLicenseAV.as_view(), name="UploadLicense"),
     path("attorney/list", AttorneyListAV.as_view(), name="ListAttorneys"),
     path("attorney/toggleapproval/<uuid:pk>", ToggleAttorneyApprovalAV.as_view(), name="ToggleAttorneyApproval"),
-
+    path("attorney/educationandexperience/<uuid:pk>", AttorneyEducationExperienceListAV.as_view(), name="EducationAndExperience"),
+    path("attorney/educationandexperience", AttorneyEducationExperienceCreateAV.as_view(), name="UpdateEducationAndExperience"),
     # admin paths
     path("createadmin", AdminUserCreateAV.as_view(), name="CreateAdmin"),
     
