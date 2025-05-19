@@ -17,17 +17,31 @@ class IsAdmin(permissions.BasePermission):
 class IsAdminOrOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         # Allow admin users to access any object
-        if request.user.role == 'admin':
-            return True
-        # Allow users to access their own data
-        return obj.id == request.user.id
+        try:
+            return request.user.role == 'admin' or obj.id == request.user.id
+        except:
+            return False
 
 # is client or admin
 class IsClientOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.role == 'client' or request.user.role == 'admin'
+        try:
+            return request.user.role == 'client' or request.user.role == 'admin'
+        except:
+            return False
+    
+# is client or admin or owner
+class IsClientOrAdminOrOwner(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        try:
+            return request.user.role == 'client' or request.user.role == 'admin' or obj.id == request.user.id
+        except:
+            return False
     
 # is attorney or admin
 class IsAttorneyOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.role == 'attorney' or request.user.role == 'admin'
+        try:
+            return request.user.role == 'attorney' or request.user.role == 'admin'
+        except:
+            return False
