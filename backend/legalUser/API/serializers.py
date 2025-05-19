@@ -169,6 +169,10 @@ class ExperienceSerializer(serializers.ModelSerializer):
         model = Experience
         fields = ['id', 'organization', 'title', 'years']
 
+class AttorneyProfileSerializer(serializers.Serializer):
+    education = EducationSerializer(many=True)
+    experience = ExperienceSerializer(many=True)
+
 # Client related serializers
 class ClientSerializer(serializers.ModelSerializer):
     class Meta:

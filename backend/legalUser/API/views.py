@@ -17,7 +17,8 @@ from legalUser.API.serializers import(
     AttorneyUpdateSerializer,
     AttorneySerializer,
     EducationSerializer,
-    ExperienceSerializer
+    ExperienceSerializer,
+    AttorneyProfileSerializer
     
 )
 from legalUser.common.emailsender import send_email
@@ -343,121 +344,87 @@ class ToggleAttorneyApprovalAV(APIView):
 
 class AttorneyEducationExperienceAV(APIView):
     permission_classes = [IsClientOrAdminOrOwner]
-    serializer_class = EducationSerializer
-    experience_serializer_class = ExperienceSerializer
-    queryset = Education.objects.all()
 
-    #get all education of an attorney
     def get(self, request, pk):
         response = BaseResponse()
         try:
             user = User.objects.get(id=pk)
             if user.role != 'attorney':
-                response = BaseResponse(status_code=400, success=False, message="User is not an attorney")
-                return Response(response.to_dict(), status=response.status_code)
+                return Response(BaseResponse(400, False, "User is not an attorney").to_dict(), status=400)
+
             attorney = Attorney.objects.get(user=user)
             education = Education.objects.filter(attorney=attorney)
-            serializer = self.serializer_class(education, many=True)
             experience = Experience.objects.filter(attorney=attorney)
-            experience_serializer = self.experience_serializer_class(experience, many=True)
-            response = BaseResponse(status_code=200, success=True, message="Education and experience retrieved successfully", data={"education":serializer.data, "experience":experience_serializer.data})
+
+            serializer = AttorneyProfileSerializer({
+                "education": EducationSerializer(education, many=True).data,
+                "experience": ExperienceSerializer(experience, many=True).data
+            })
+
+            response.update(200, True, "Education and experience retrieved successfully", serializer.data)
         except Attorney.DoesNotExist:
-            response = BaseResponse(status_code=404, success=False, message="Attorney not found")
+            response.update(404, False, "Attorney not found")
         return Response(response.to_dict(), status=response.status_code)
-    
-    # update education and experience
+
     def patch(self, request, pk):
         response = BaseResponse()
         try:
             user = request.user
             if not hasattr(user, 'attorney'):
-                response.update(400, False, "User is not an attorney")
-                return Response(response.to_dict(), status=response.status_code)
+                return Response(BaseResponse(400, False, "User is not an attorney").to_dict(), status=400)
 
             attorney = user.attorney
             data = request.data
 
-            def handle_serializer(key, serializer_class, model_class):
-                item_id = pk
-                if not item_id:
-                    response.update(400, False, f"{key.capitalize()} ID is required")
-                    raise ValueError
+            update_map = {
+                'education': (Education, EducationSerializer),
+                'experience': (Experience, ExperienceSerializer)
+            }
 
-                try:
-                    item = model_class.objects.get(id=item_id)
-                    if item.attorney != attorney:
-                        response.update(403, False, f"You don't have permission to update this {key}")
-                        raise ValueError
+            for key, (model, serializer_class) in update_map.items():
+                if key in data:
+                    try:
+                        instance = model.objects.get(id=pk, attorney=attorney)
+                        serializer = serializer_class(instance, data=data[key], partial=True)
+                        if serializer.is_valid():
+                            serializer.save()
+                            return Response(BaseResponse(200, True, f"{key.capitalize()} updated successfully", serializer.data).to_dict())
+                        return Response(BaseResponse(400, False, f"Invalid {key} details", serializer.errors).to_dict(), status=400)
+                    except model.DoesNotExist:
+                        continue
 
-                    serializer = serializer_class(item, data=data.get(key, {}), partial=True)
-                    if serializer.is_valid():
-                        serializer.save()
-                        response.update(200, True, f"{key.capitalize()} updated successfully", serializer.data)
-                        return True  # successful update
-                    else:
-                        response.update(400, False, f"Invalid {key} details", serializer.errors)
-                        raise ValueError
-                except model_class.DoesNotExist:
-                    return False  # not found
-
-            # Try education first
-            if handle_serializer('education', EducationSerializer, Education):
-                return Response(response.to_dict(), status=response.status_code)
-
-            # If not found, try experience
-            if handle_serializer('experience', ExperienceSerializer, Experience):
-                return Response(response.to_dict(), status=response.status_code)
-
-            # If neither found
             response.update(404, False, "Neither education nor experience record found with the given ID")
-
-        except ValueError:
-            pass  # response already updated
         except Exception as e:
             response.update(500, False, str(e))
 
         return Response(response.to_dict(), status=response.status_code)
-    
-    # delete education and experience
+
     def delete(self, request, pk):
         response = BaseResponse()
         try:
             user = request.user
             if not hasattr(user, 'attorney'):
-                response.update(400, False, "User is not an attorney")
-                return Response(response.to_dict(), status=response.status_code)
+                return Response(BaseResponse(400, False, "User is not an attorney").to_dict(), status=400)
 
             attorney = user.attorney
+            delete_map = {
+                'education': Education,
+                'experience': Experience
+            }
 
-            def try_delete(key, model_class):
+            for key, model in delete_map.items():
                 try:
-                    item = model_class.objects.get(id=pk)
-                    if item.attorney != attorney:
-                        response.update(403, False, f"You don't have permission to delete this {key}")
-                        raise ValueError
-                    item.delete()
-                    response.update(200, True, f"{key.capitalize()} deleted successfully")
-                    return True
-                except model_class.DoesNotExist:
-                    return False
+                    instance = model.objects.get(id=pk, attorney=attorney)
+                    instance.delete()
+                    return Response(BaseResponse(200, True, f"{key.capitalize()} deleted successfully").to_dict())
+                except model.DoesNotExist:
+                    continue
 
-            # Try to delete education
-            if try_delete('education', Education):
-                return Response(response.to_dict(), status=response.status_code)
-
-            # Try to delete experience
-            if try_delete('experience', Experience):
-                return Response(response.to_dict(), status=response.status_code)
-
-            # Neither found
             response.update(404, False, "Neither education nor experience record found with the given ID")
-
-        except ValueError:
-            pass  # Response already set
         except Exception as e:
             response.update(500, False, str(e))
 
-        return Response(response.to_dict(), status=response.status_code)            
+        return Response(response.to_dict(), status=response.status_code)           
             
     
 class AttorneyEducationExperienceCreateAV(APIView):
@@ -468,28 +435,29 @@ class AttorneyEducationExperienceCreateAV(APIView):
         user = request.user
 
         if not hasattr(user, 'attorney'):
-            response.update(400, False, "User is not an attorney")
-            return Response(response.to_dict(), status=response.status_code)
+            return Response(BaseResponse(400, False, "User is not an attorney").to_dict(), status=400)
 
         attorney = user.attorney
         data = request.data
         result_data = {}
         messages = []
 
-        def handle_serializer(key, serializer_class):
-            if key in data:
-                serializer = serializer_class(data=data[key])
-                if serializer.is_valid():
-                    serializer.save(attorney=attorney)
-                    result_data[key] = serializer.data
-                    messages.append(f"{key.capitalize()} added successfully")
-                else:
-                    response.update(400, False, f"Invalid {key} details", serializer.errors)
-                    raise ValueError  # Trigger early exit
-       
+        serializers_map = {
+            'education': EducationSerializer,
+            'experience': ExperienceSerializer,
+        }
+
         try:
-            handle_serializer('education', EducationSerializer)
-            handle_serializer('experience', ExperienceSerializer)
+            for key, serializer_class in serializers_map.items():
+                if key in data:
+                    serializer = serializer_class(data=data[key])
+                    if serializer.is_valid():
+                        serializer.save(attorney=attorney)
+                        result_data[key] = serializer.data
+                        messages.append(f"{key.capitalize()} added successfully")
+                    else:
+                        response.update(400, False, f"Invalid {key} details", serializer.errors)
+                        raise ValueError  # Early exit if any invalid
 
             if result_data:
                 response.update(200, True, " and ".join(messages), result_data)
@@ -497,10 +465,9 @@ class AttorneyEducationExperienceCreateAV(APIView):
                 response.update(400, False, "No valid education or experience data provided")
 
         except ValueError:
-            pass  # response is already prepared with error inside handler
+            pass  # Response already set
 
         return Response(response.to_dict(), status=response.status_code)
-    
     
 
 # otp views
