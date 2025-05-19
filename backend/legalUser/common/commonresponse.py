@@ -14,3 +14,13 @@ class BaseResponse():
             'error': self.error,
             'statuscode': self.status_code,
         }
+    
+    def update(self, status_code=None, success=None, message=None, data=None):
+        if status_code is not None:
+            self.status_code = status_code
+        if success is not None:
+            self.success = success
+        if message is not None:
+            self.message = message
+        if data is not None:
+            self.data = data
