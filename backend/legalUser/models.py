@@ -80,20 +80,3 @@ class Experience(models.Model):
 
     def __str__(self):
         return self.organization
-    
-
-class AttorneyEducation(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    attorney = models.ForeignKey(Attorney, on_delete=models.CASCADE)
-    education = models.ForeignKey(Education, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.attorney.user.email} - {self.education.institution}"
-    
-class AttorneyExperience(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    attorney = models.ForeignKey(Attorney, on_delete=models.CASCADE)
-    experience = models.ForeignKey(Experience, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.attorney.user.email} - {self.experience.organization}"
