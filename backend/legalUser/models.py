@@ -36,6 +36,13 @@ class Client(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     is_probono = models.BooleanField(default=False)
     probono_document = models.TextField(max_length=255, null=True, blank=True)
+    probono_status = models.CharField(max_length=255, choices=[
+        ('not_applied', 'Not Applied'),
+        ('pending', 'Pending'), 
+        ('approved', 'Approved'), 
+        ('rejected', 'Rejected')
+    ], default='not_applied')
+    probono_rejected_reason = models.TextField(max_length=255, null=True, blank=True)
     probono_approved_at = models.DateTimeField(null=True, blank=True)
     probono_expires_at = models.DateTimeField(null=True, blank=True)
 
