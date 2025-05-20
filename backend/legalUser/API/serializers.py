@@ -179,6 +179,10 @@ class ClientSerializer(serializers.ModelSerializer):
         model = Client
         fields = "__all__"
 
+class ClientProBonoRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Client
+        fields = ['probono_document']
 
 # OTP related serializers
 class OTPSerializer(serializers.ModelSerializer):
