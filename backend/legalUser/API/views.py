@@ -73,16 +73,29 @@ class UserListAV(generics.ListAPIView):
     def get_queryset(self):
         queryset = User.objects.all()
         role = self.request.query_params.get('role', None)
+        
+        # Filter by role if specified
         if role and role in ['admin', 'client', 'attorney']:
             queryset = queryset.filter(role=role)
-            if role == 'attorney':
-                is_approved = self.request.query_params.get('is_approved', None)
-                if is_approved and is_approved in ['true', 'false']:
-                    queryset = queryset.filter(is_approved=is_approved.lower() == 'true')
-            elif role == 'client':
-                probono_status = self.request.query_params.get('probono_status', None)
-                if probono_status and probono_status in ['pending', 'approved', 'rejected']:
-                    queryset = queryset.filter(probono_status=probono_status)
+            
+        # Filter by attorney approval status - only applies to attorneys
+        is_approved = self.request.query_params.get('is_approved', None)
+        if is_approved and is_approved in ['true', 'false']:
+            attorney_ids = Attorney.objects.filter(
+                is_approved=is_approved.lower() == 'true'
+            ).values_list('user_id', flat=True)
+            # Only include attorneys with specified approval status
+            queryset = queryset.filter(role='attorney', id__in=attorney_ids)
+            
+        # Filter by client probono status - only applies to clients
+        probono_status = self.request.query_params.get('probono_status', None)
+        if probono_status and probono_status in ['pending', 'approved', 'rejected', 'not_applied']:
+            client_ids = Client.objects.filter(
+                probono_status=probono_status
+            ).values_list('user_id', flat=True)
+            # Only include clients with specified probono status
+            queryset = queryset.filter(role='client', id__in=client_ids)
+            
         return queryset
 
 class UserDetailAV(generics.RetrieveUpdateDestroyAPIView):
