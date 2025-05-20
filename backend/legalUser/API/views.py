@@ -476,6 +476,90 @@ class AttorneyEducationExperienceCreateAV(APIView):
 
         return Response(response.to_dict(), status=response.status_code)
 
+# client Views
+class ClientUploadProBonoRequestAV(APIView):
+    permission_classes = [IsClientOrAdmin]
+
+    def post(self, request):
+        response = BaseResponse()
+
+        if request.user.role != 'client':
+            response.update(403, False, "Only clients can request probono services")
+            return Response(response.to_dict(), status=403)
+
+        document = request.FILES.get('probono_document')
+        if not document:
+            response.update(400, False, "No document provided")
+            return Response(response.to_dict(), status=400)
+        
+        if request.user.client.probono_status != 'not_applied':
+            response.update(400, False, "Probono request already submitted")
+            return Response(response.to_dict(), status=400)
+
+        try:
+            file_url, _ = upload_file(document, folder="client_probono_docs")
+
+            client = Client.objects.get(user=request.user)
+            client.probono_document = file_url
+            client.probono_status = 'pending'
+            client.save()
+
+            response.update(200, True, "Probono request submitted successfully", {
+                "probono_document": file_url,
+                "status": client.probono_status
+            })
+        except Client.DoesNotExist:
+            response.update(404, False, "Client profile not found")
+        except Exception as e:
+            response.update(500, False, f"Failed to submit probono request: {str(e)}")
+
+        return Response(response.to_dict(), status=response.status_code)
+
+
+# admin views
+class AdminProBonoStatusUpdateAV(APIView):
+    permission_classes = [IsAdmin]
+
+    def patch(self, request, pk):
+        response = BaseResponse()
+        status = request.data.get('status')
+        rejected_reason = request.data.get('rejected_reason', '')
+
+        if status not in ['approved', 'rejected']:
+            response.update(400, False, "Invalid status. Must be 'approved' or 'rejected'")
+            return Response(response.to_dict(), status=400)
+
+        try:
+            user = User.objects.get(id=pk)
+            if user.role != 'client':
+                response.update(400, False, "User is not a client")
+                return Response(response.to_dict(), status=400)
+
+            client = Client.objects.get(user=user)
+
+            client.probono_status = status
+            if status == 'approved':
+                client.is_probono = True
+                now = timezone.now()
+                client.probono_approved_at = now
+                client.probono_expires_at = now + timedelta(days=365)
+                client.probono_rejected_reason = None
+            elif status == 'rejected':
+                client.is_probono = False
+                client.probono_approved_at = None
+                client.probono_expires_at = None
+                client.probono_rejected_reason = rejected_reason
+
+            client.save()
+
+            response.update(200, True, f"Client probono status updated to {status}")
+        except Client.DoesNotExist:
+            response.update(404, False, "Client not found")
+        except Exception as e:
+            response.update(500, False, f"Error updating status: {str(e)}")
+
+        return Response(response.to_dict(), status=response.status_code)
+
 # otp views
 
 class OTPVerifyAV(APIView):
