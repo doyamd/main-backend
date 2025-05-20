@@ -175,9 +175,11 @@ class AttorneyProfileSerializer(serializers.Serializer):
 
 # Client related serializers
 class ClientSerializer(serializers.ModelSerializer):
+    user = UserDetailSerializer(read_only=True)
     class Meta:
         model = Client
         fields = "__all__"
+        depth = 1
 
 class ClientProBonoRequestSerializer(serializers.ModelSerializer):
     class Meta:
