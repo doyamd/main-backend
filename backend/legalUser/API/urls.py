@@ -14,7 +14,9 @@ from legalUser.API.views import (
     AttorneyListAV,
     ToggleAttorneyApprovalAV,
     AttorneyEducationExperienceAV,
-    AttorneyEducationExperienceCreateAV
+    AttorneyEducationExperienceCreateAV,
+    ClientUploadProBonoRequestAV,
+    AdminProBonoStatusUpdateAV
     )
 
 urlpatterns = [
@@ -33,8 +35,13 @@ urlpatterns = [
     path("attorney/toggleapproval/<uuid:pk>", ToggleAttorneyApprovalAV.as_view(), name="ToggleAttorneyApproval"),
     path("attorney/educationandexperience/<uuid:pk>", AttorneyEducationExperienceAV.as_view(), name="EducationAndExperience"),
     path("attorney/educationandexperience", AttorneyEducationExperienceCreateAV.as_view(), name="UpdateEducationAndExperience"),
+    
+    # client paths
+    path('client/probono/upload', ClientUploadProBonoRequestAV.as_view(), name='client-upload-probono'),
+    
     # admin paths
     path("createadmin", AdminUserCreateAV.as_view(), name="CreateAdmin"),
+    path('admin/probono/status/<uuid:pk>', AdminProBonoStatusUpdateAV.as_view(), name='admin-update-probono'),
     
     #otp paths
     path("verifyotp", OTPVerifyAV.as_view(), name="VerifyOtp"),
