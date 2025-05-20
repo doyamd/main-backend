@@ -75,6 +75,9 @@ class UserListAV(generics.ListAPIView):
         role = self.request.query_params.get('role', None)
         if role and role in ['admin', 'client', 'attorney']:
             queryset = queryset.filter(role=role)
+        is_approved = self.request.query_params.get('is_approved', None)
+        if is_approved and is_approved in ['true', 'false']:
+            queryset = queryset.filter(is_approved=is_approved.lower() == 'true')
         return queryset
 
 class UserDetailAV(generics.RetrieveUpdateDestroyAPIView):
