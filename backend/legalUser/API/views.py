@@ -68,35 +68,54 @@ class AdminUserCreateAV(APIView):
     
 class UserListAV(generics.ListAPIView):
     permission_classes = [IsAdmin]
-    serializer_class = UserDetailSerializer
-    
+
     def get_queryset(self):
-        queryset = User.objects.all()
-        role = self.request.query_params.get('role', None)
-        
-        # Filter by role if specified
-        if role and role in ['admin', 'client', 'attorney']:
-            queryset = queryset.filter(role=role)
-            
-        # Filter by attorney approval status - only applies to attorneys
-        is_approved = self.request.query_params.get('is_approved', None)
-        if is_approved and is_approved in ['true', 'false']:
-            attorney_ids = Attorney.objects.filter(
-                is_approved=is_approved.lower() == 'true'
-            ).values_list('user_id', flat=True)
-            # Only include attorneys with specified approval status
-            queryset = queryset.filter(role='attorney', id__in=attorney_ids)
-            
-        # Filter by client probono status - only applies to clients
-        probono_status = self.request.query_params.get('probono_status', None)
-        if probono_status and probono_status in ['pending', 'approved', 'rejected', 'not_applied']:
-            client_ids = Client.objects.filter(
-                probono_status=probono_status
-            ).values_list('user_id', flat=True)
-            # Only include clients with specified probono status
-            queryset = queryset.filter(role='client', id__in=client_ids)
-            
-        return queryset
+        return User.objects.all().select_related('client', 'attorney')
+
+    def list(self, request, *args, **kwargs):
+        role = request.query_params.get('role')
+        probono_status = request.query_params.get('probono_status')
+        is_approved = request.query_params.get('is_approved')
+
+        users = self.get_queryset()
+
+        # Role-based filtering
+        if role in ['admin', 'client', 'attorney']:
+            users = users.filter(role=role)
+
+        # Additional filtering if role is attorney and is_approved is specified
+        if is_approved in ['true', 'false']:
+            is_approved_bool = is_approved.lower() == 'true'
+            approved_user_ids = Attorney.objects.filter(is_approved=is_approved_bool).values_list('user_id', flat=True)
+            users = users.filter(role='attorney', id__in=approved_user_ids)
+
+        # Additional filtering if role is client and probono_status is specified
+        if probono_status in ['pending', 'approved', 'rejected', 'not_applied']:
+            probono_user_ids = Client.objects.filter(probono_status=probono_status).values_list('user_id', flat=True)
+            users = users.filter(role='client', id__in=probono_user_ids)
+
+        data = []
+        for user in users:
+
+            if hasattr(user, 'client'):
+                data.append({"User": {
+                    "Role": user.role,
+                    "data": ClientSerializer(user.client).data
+                    }})
+
+            elif hasattr(user, 'attorney'):
+                data.append({"User": {
+                    "Role": user.role,
+                    "data": AttorneySerializer(user.attorney).data
+                    }})
+
+            else:
+                data.append({"User": {
+                    "Role": user.role,
+                    "data": UserDetailSerializer(user).data
+                    }})
+
+        return Response(data)
 
 class UserDetailAV(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminOrOwner]
