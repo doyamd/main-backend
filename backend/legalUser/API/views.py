@@ -349,6 +349,13 @@ class ToggleAttorneyApprovalAV(APIView):
         response = BaseResponse()
         try:
             user = User.objects.get(id=pk)
+            if not user:
+                response = BaseResponse(
+                    status_code=404,
+                    success=False,
+                    message="User not found"
+                )
+                return Response(response.to_dict(), status=response.status_code)
             if user.role != 'attorney':
                 response = BaseResponse(
                     status_code=400,
