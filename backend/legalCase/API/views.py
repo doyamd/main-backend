@@ -3,18 +3,22 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from legalCase.models import Case, CaseRequest
 from legalCase.API.serializers import CaseSerializer, CaseRequestSerializer
-from legalUser.API.permissions import IsClientOrAdmin
+from legalUser.API.permissions import IsClientOrAdmin, IsClientOrAdminOrAttorney
 from legalUser.common.commonresponse import BaseResponse
 from utils.upload import upload_file
 from legalUser.models import Attorney, User
 
 class CaseListCreateAV(APIView):
-    permission_classes = [IsClientOrAdmin]
+    permission_classes = [IsClientOrAdminOrAttorney]
 
     def get(self, request):
         response = BaseResponse()
         user = request.user
         cases = Case.objects.filter(user=user)
+        if user.role == 'attorney':
+            caseRequests = CaseRequest.objects.filter(attorney=user)
+            case_ids = caseRequests.values_list('case', flat=True)
+            cases = Case.objects.filter(id__in=case_ids)
         serializer = CaseSerializer(cases, many=True)
         response.update(200, True, "Cases retrieved successfully", serializer.data)
         return Response(response.to_dict(), status=response.status_code)
@@ -101,7 +105,7 @@ class CaseDetailAV(APIView):
         return Response(response.to_dict(), status=response.status_code)
     
 class CaseRequestListCreateAV(APIView):
-    permission_classes = [IsClientOrAdmin]
+    permission_classes = [IsClientOrAdminOrAttorney]
 
     def get(self, request):
         response = BaseResponse()
@@ -110,6 +114,8 @@ class CaseRequestListCreateAV(APIView):
         if user.role == 'client':
             case_ids = Case.objects.filter(user=user).values_list('id', flat=True)
             requests = CaseRequest.objects.filter(case__id__in=case_ids)
+        elif user.role == 'attorney':
+            requests = CaseRequest.objects.filter(attorney=user)
         else:  # admin sees all
             requests = CaseRequest.objects.all()
 
