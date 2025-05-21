@@ -584,9 +584,8 @@ class AdminProBonoStatusUpdateAV(APIView):
             client.probono_status = status
             if status == 'approved':
                 client.is_probono = True
-                now = timezone.now()
-                client.probono_approved_at = now
-                client.probono_expires_at = now + timedelta(days=365)
+                client.probono_approved_at = datetime.now(tz=timezone.utc)
+                client.probono_expires_at = datetime.now(tz=timezone.utc) + timedelta(days=365)
                 client.probono_rejected_reason = None
             elif status == 'rejected':
                 client.is_probono = False
