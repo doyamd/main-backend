@@ -45,3 +45,11 @@ class IsAttorneyOrAdmin(permissions.BasePermission):
             return request.user.role == 'attorney' or request.user.role == 'admin'
         except:
             return False
+        
+# is client or admin or attorney
+class IsClientOrAdminOrAttorney(permissions.BasePermission):
+    def has_permission(self, request, view):
+        try:
+            return request.user.role == 'client' or request.user.role == 'admin' or request.user.role == 'attorney'
+        except:
+            return False
