@@ -1,12 +1,12 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from legalCase.models import Case
-from legalCase.API.serializers import CaseSerializer
+from legalCase.models import Case, CaseRequest
+from legalCase.API.serializers import CaseSerializer, CaseRequestSerializer
 from legalUser.API.permissions import IsClientOrAdmin
 from legalUser.common.commonresponse import BaseResponse
 from utils.upload import upload_file
-
+from legalUser.models import Attorney, User
 
 class CaseListCreateAV(APIView):
     permission_classes = [IsClientOrAdmin]
@@ -98,4 +98,43 @@ class CaseDetailAV(APIView):
 
         case.delete()
         response.update(200, True, "Case deleted successfully")
+        return Response(response.to_dict(), status=response.status_code)
+    
+class CaseRequestListCreateAV(APIView):
+    permission_classes = [IsClientOrAdmin]
+
+    def get(self, request):
+        response = BaseResponse()
+        user = request.user
+
+        if user.role == 'client':
+            case_ids = Case.objects.filter(user=user).values_list('id', flat=True)
+            requests = CaseRequest.objects.filter(case__id__in=case_ids)
+        else:  # admin sees all
+            requests = CaseRequest.objects.all()
+
+        serializer = CaseRequestSerializer(requests, many=True)
+        response.update(200, True, "Case requests retrieved successfully", serializer.data)
+        return Response(response.to_dict(), status=response.status_code)
+
+    def post(self, request):
+        response = BaseResponse()
+        user = request.user
+
+        if user.role != 'client':
+            response.update(403, False, "Only clients can create case requests")
+            return Response(response.to_dict(), status=response.status_code)
+        
+        serializer = CaseRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            response.update(400, False, "Invalid data", serializer.errors)
+            return Response(response.to_dict(), status=response.status_code)
+
+        case = serializer.validated_data['case']
+        if user.role == 'client' and case.user != user:
+            response.update(403, False, "You can only create requests for your own cases")
+            return Response(response.to_dict(), status=response.status_code)
+
+        case_request = serializer.save()
+        response.update(201, True, "Case request created successfully", CaseRequestSerializer(case_request).data)
         return Response(response.to_dict(), status=response.status_code)
