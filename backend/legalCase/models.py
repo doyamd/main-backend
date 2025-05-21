@@ -12,7 +12,6 @@ class Case(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     is_probono = models.BooleanField(default=False)
     is_available = models.BooleanField(default=True)
-    assigned_attorney = models.ForeignKey(Attorney, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.title
