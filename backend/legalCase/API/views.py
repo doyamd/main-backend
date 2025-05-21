@@ -2,8 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from legalCase.models import Case, CaseRequest
-from legalCase.API.serializers import CaseSerializer, CaseRequestSerializer
-from legalUser.API.permissions import IsClientOrAdmin, IsClientOrAdminOrAttorney
+from legalCase.API.serializers import CaseSerializer, CaseRequestSerializer, CaseRequestDecisionSerializer
+from legalUser.API.permissions import IsClientOrAdmin, IsClientOrAdminOrAttorney, IsAttorneyOrAdmin
 from legalUser.common.commonresponse import BaseResponse
 from utils.upload import upload_file
 from legalUser.models import Attorney, User
@@ -144,3 +144,41 @@ class CaseRequestListCreateAV(APIView):
         case_request = serializer.save()
         response.update(201, True, "Case request created successfully", CaseRequestSerializer(case_request).data)
         return Response(response.to_dict(), status=response.status_code)
+    
+class CaseRequestDecisionView(APIView):
+    permission_classes = [IsAttorneyOrAdmin]
+
+    def patch(self, request, pk):
+        try:
+            case_request = CaseRequest.objects.get(pk=pk)
+        except CaseRequest.DoesNotExist:
+            return Response(BaseResponse(
+                status_code=404,
+                success=False,
+                message="Case request not found"
+            ).to_dict())
+
+        # Attorney can only respond to their own requests
+        if request.user.role == "attorney" and case_request.attorney != request.user:
+            return Response(BaseResponse(
+                status_code=403,
+                success=False,
+                message="You can only respond to your own case requests"
+            ).to_dict())
+
+        serializer = CaseRequestDecisionSerializer(case_request, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(BaseResponse(
+                status_code=200,
+                success=True,
+                message=f"Case request {serializer.validated_data['status']} successfully",
+                data=serializer.data
+            ).to_dict())
+
+        return Response(BaseResponse(
+            status_code=400,
+            success=False,
+            message="Invalid data",
+            data=serializer.errors
+        ).to_dict())
