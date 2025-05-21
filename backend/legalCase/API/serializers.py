@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from legalCase.models import Case, CaseRequest
+from datetime import timezone, datetime
 
 class CaseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,3 +24,21 @@ class CaseRequestSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("This attorney has already been requested for this case.")
 
         return data
+    
+class CaseRequestDecisionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CaseRequest
+        fields = ['id', 'status', 'response_message']
+
+    def validate_status(self, value):
+        if value not in ['accepted', 'declined']:
+            raise serializers.ValidationError("Status must be either 'accepted' or 'declined'")
+        return value
+
+    def update(self, instance, validated_data):
+        instance.status = validated_data.get('status', instance.status)
+        instance.response_message = validated_data.get('response_message', instance.response_message)
+        now = datetime.now(tz=timezone.utc)
+        instance.responded_at = now
+        instance.save()
+        return instance
