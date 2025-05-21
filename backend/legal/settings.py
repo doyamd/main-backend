@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'django_filters',
     'legalUser',
+    'legalCase',
     'drf_yasg',
     'corsheaders'
 ] 
