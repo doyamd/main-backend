@@ -39,7 +39,12 @@ from utils.upload import upload_file
 # user views
 class UserCreateAV(APIView):
     def post(self, request):
-        serializer = UserSerializer(data=request.data)
+        # Merge data and files
+        data = request.data.copy()
+        if request.FILES.get("document"):
+            data["document"] = request.FILES["document"]
+        # print(data)
+        serializer = UserSerializer(data=data)
         response = BaseResponse()
         if serializer.is_valid():
             serializer.save()
