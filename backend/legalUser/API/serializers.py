@@ -2,22 +2,24 @@ from random import randint
 from django.contrib.auth.hashers import check_password, make_password
 from rest_framework import serializers
 from datetime import datetime, timedelta
+from utils.upload import upload_file
 
 from legalUser.models import OTP, User, Client, Attorney, Education, Experience, AttorneyExpertise
 
 # User related serializers
 class UserSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True)
+    document = serializers.FileField(required=False, write_only=True)
+    
     class Meta:
         model = User
-        # exclude = ["image"]
-        fields = ["first_name", "last_name", "email", "password", "confirm_password", "role"]
-        extra_kwargs ={'password':{'write_only':True},}
+        fields = ["first_name", "last_name", "email", "password", "confirm_password", "role", "document"]
+        extra_kwargs = {'password': {'write_only': True}}
     
     def validate(self, data):
         confirmPassword = data.get('confirm_password')
         password = data.get('password')
-        print(password, confirmPassword)
+        
         if password != confirmPassword:
             raise serializers.ValidationError("Passwords do not match")
         
@@ -28,18 +30,43 @@ class UserSerializer(serializers.ModelSerializer):
         return data
     
     def save(self):
-        validated_data = self.validated_data
-        validated_data.pop('confirm_password')
-        password = validated_data.pop('password')
-        validated_data['password'] = make_password(password)
+        validated_data = self.validated_data.copy()
+        role = validated_data.get("role")
+        document = validated_data.pop("document", None)
+        validated_data.pop("confirm_password")
         
+        # Hash password
+        password = validated_data.pop("password")
+        validated_data["password"] = make_password(password)
+        
+        # Create the user
         user = User.objects.create(**validated_data)
-        
-        if user.role == 'client':
-            Client.objects.create(user=user)
-        elif user.role == 'attorney':
-            Attorney.objects.create(user=user)
-            
+
+        try:
+            if role == "client":
+                client = Client.objects.create(user=user)
+
+                if document:
+                    # Upload file
+                    file_url, _ = upload_file(document, folder="probono_documents")
+                    client.probono_document = file_url
+                    client.probono_status = "pending"
+                    client.save()
+
+            elif role == "attorney":
+                if not document:
+                    raise serializers.ValidationError("License document is required for attorneys.")
+
+                # Upload license document
+                file_url, _ = upload_file(document, folder="attorney_licenses")
+                Attorney.objects.create(user=user, license_document=file_url)
+
+            # Admins don't require any document
+        except Exception as e:
+            # Optional: rollback user creation if necessary
+            user.delete()
+            raise serializers.ValidationError(f"Failed to create profile: {str(e)}")
+
         return user
 
 class AdminUserSerializer(serializers.ModelSerializer):
