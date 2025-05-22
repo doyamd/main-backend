@@ -50,7 +50,8 @@ INSTALLED_APPS = [
     'legalUser',
     'legalCase',
     'drf_yasg',
-    'corsheaders'
+    'corsheaders',
+    'legalLaw'
 ] 
 
 MIDDLEWARE = [
