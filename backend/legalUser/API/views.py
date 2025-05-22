@@ -74,6 +74,7 @@ class AdminUserCreateAV(APIView):
     
 class UserListAV(generics.ListAPIView):
     permission_classes = [IsAdmin]
+    serializer_class = UserDetailSerializer
 
     def get_queryset(self):
         return User.objects.all().select_related('client', 'attorney')
