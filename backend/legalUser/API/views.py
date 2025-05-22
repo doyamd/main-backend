@@ -18,7 +18,8 @@ from legalUser.API.serializers import(
     AttorneySerializer,
     EducationSerializer,
     ExperienceSerializer,
-    AttorneyProfileSerializer
+    AttorneyProfileSerializer,
+    UserAttorneyDetailsSerializer
     
 )
 from legalUser.common.emailsender import send_email
@@ -521,6 +522,12 @@ class AttorneyEducationExperienceCreateAV(APIView):
             pass  # Response already set
 
         return Response(response.to_dict(), status=response.status_code)
+    
+class AvailableAttorneyDetailView(generics.RetrieveAPIView):
+    queryset = User.objects.filter(role="attorney")
+    serializer_class = UserAttorneyDetailsSerializer
+    permission_classes = [IsClientOrAdmin]
+    lookup_field = 'pk'  # Accepts /users/<uuid:pk>
 
 # client Views
 class ClientUploadProBonoRequestAV(APIView):
