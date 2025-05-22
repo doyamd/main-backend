@@ -332,6 +332,8 @@ class AttorneyListAV(generics.ListAPIView):
         # If user is client, only show available and approved attorneys with basic user info
         if self.request.user.role == 'client':
             queryset = queryset.filter(is_available=True, is_approved=True)
+            if self.request.user.client.probono_status == 'approved':
+                queryset = queryset.filter(is_probono=True)
         # If user is admin, allow filtering by params and show all fields except password
         elif self.request.user.role == 'admin':
             is_available = self.request.query_params.get('is_available')
