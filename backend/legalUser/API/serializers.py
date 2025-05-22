@@ -200,6 +200,49 @@ class AttorneyProfileSerializer(serializers.Serializer):
     education = EducationSerializer(many=True)
     experience = ExperienceSerializer(many=True)
 
+class AttorneyDetailsSerializer(serializers.ModelSerializer):
+    education = EducationSerializer(source='education_set', many=True, read_only=True)
+    experience = ExperienceSerializer(source='experience_set', many=True, read_only=True)
+    user = UserDetailSerializer(read_only=True)
+
+    class Meta:
+        model = Attorney
+        fields = [
+            "id", "starting_price", "is_available", "offers_probono",
+            "address", "rating", "profile_completion", "license_document",
+            "is_approved", "expertise", "education", "experience", "user"
+        ]
+
+    def to_representation(self, instance):
+        """Customize response based on requesting user's role."""
+        representation = super().to_representation(instance)
+
+        request = self.context.get('request')
+
+        if request and request.user.role == 'client':
+            if not instance.is_available:
+                raise serializers.ValidationError("Attorney is not available.")
+            
+            if not instance.is_approved:
+                raise serializers.ValidationError("Attorney is not approved.")
+            
+            client = Client.objects.get(user=request.user)
+            if not client.probono_status == "approved" and not instance.offers_probono:
+                raise serializers.ValidationError("Attorney does not offer probono services.")
+
+            # Remove `user` from response for clients
+            representation.pop('user', None)
+
+        return representation
+
+    
+class UserAttorneyDetailsSerializer(serializers.ModelSerializer):
+    attorney = AttorneyDetailsSerializer(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ["id", "first_name", "last_name", "email", "role", "image", "attorney"]
+
 # Client related serializers
 class ClientSerializer(serializers.ModelSerializer):
     user = UserDetailSerializer(read_only=True)
