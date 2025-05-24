@@ -52,6 +52,7 @@ class Client(models.Model):
 class Attorney(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    bio = models.TextField(max_length=255, null=True, blank=True)
     starting_price = models.FloatField(null=True, blank=True)
     is_available = models.BooleanField(default=False)
     offers_probono = models.BooleanField(default=False)
