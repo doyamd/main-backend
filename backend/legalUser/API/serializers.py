@@ -155,7 +155,7 @@ class AttorneySerializer(serializers.ModelSerializer):
 class AttorneyUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attorney
-        fields = ["starting_price", "is_available", "offers_probono", "address", "expertise"]
+        fields = ["starting_price", "is_available", "offers_probono", "address", "expertise", "bio"]
         extra_kwargs = {
             'password': {'write_only': True},
             'expertise': {'required': False}
