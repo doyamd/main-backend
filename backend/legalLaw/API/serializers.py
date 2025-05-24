@@ -1,6 +1,9 @@
 from rest_framework import serializers
 from legalLaw.models import LegalDocument
 from utils.upload import upload_file
+from legalLaw.constants.category import LegalCategory
+from legalLaw.constants.jurisdiction import Jurisdiction
+from legalLaw.constants.language import Language
 
 class LegalDocumentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,7 +12,6 @@ class LegalDocumentSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at', 'document_url']
 
 class LegalDocumentCreateSerializer(serializers.ModelSerializer):
-    # Add an extra field to handle the uploaded file
     document = serializers.FileField(write_only=True, required=True)
 
     class Meta:
@@ -22,8 +24,29 @@ class LegalDocumentCreateSerializer(serializers.ModelSerializer):
             'language',
             'proclamation_number',
             'publication_year',
-            'document',  # only used for upload
+            'document',
         ]
+
+    def validate_category(self, value):
+        if value not in dict(LegalCategory.choices()).keys():
+            raise serializers.ValidationError(
+                f"Invalid category. Available options: {list(dict(LegalCategory.choices()).keys())}"
+            )
+        return value
+
+    def validate_jurisdiction(self, value):
+        if value not in dict(Jurisdiction.choices()).keys():
+            raise serializers.ValidationError(
+                f"Invalid jurisdiction. Available options: {list(dict(Jurisdiction.choices()).keys())}"
+            )
+        return value
+
+    def validate_language(self, value):
+        if value not in dict(Language.choices()).keys():
+            raise serializers.ValidationError(
+                f"Invalid language. Available options: {list(dict(Language.choices()).keys())}"
+            )
+        return value
 
     def validate(self, data):
         required_fields = [
@@ -42,11 +65,9 @@ class LegalDocumentCreateSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        # Extract and upload the file
         document_file = validated_data.pop('document')
         document_url, public_id = upload_file(document_file, folder="legal_documents")
 
-        # Create the LegalDocument instance
         legal_doc = LegalDocument.objects.create(
             document_url=document_url,
             **validated_data
