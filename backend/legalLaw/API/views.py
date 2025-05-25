@@ -11,6 +11,12 @@ class LegalDocumentCreateView(generics.CreateAPIView):
     serializer_class = LegalDocumentCreateSerializer
     permission_classes = [IsAdmin]
 
+class LegalDocumentUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = LegalDocument.objects.all()
+    serializer_class = LegalDocumentSerializer
+    lookup_field = 'id'
+    permission_classes = [IsAdmin]
+
 class LegalDocumentListView(generics.ListAPIView):
     queryset = LegalDocument.objects.all()
     serializer_class = LegalDocumentSerializer
