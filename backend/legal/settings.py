@@ -52,7 +52,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'corsheaders',
     'legalLaw',
-    'legalAnalytics'
+    'legalAnalytics.apps.LegalanalyticsConfig'
 ] 
 
 MIDDLEWARE = [
