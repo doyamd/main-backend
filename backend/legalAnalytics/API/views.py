@@ -8,6 +8,68 @@ from legalLaw.constants.category import LegalCategory
 from legalUser.constants.expertise import AttorneyExpertise
 from legalUser.API.permissions import IsAdmin
 
+from rest_framework import status
+from legalAnalytics.models import DailyAnalytics, MonthlyAnalytics, LifetimeAnalytics
+from .serializers import (
+    DailyAnalyticsSerializer,
+    MonthlyAnalyticsSerializer,
+    LifetimeAnalyticsSerializer
+)
+from datetime import datetime
+from django.utils.dateparse import parse_date
+
+class DailyAnalyticsView(APIView):
+    def get(self, request):
+        date_str = request.query_params.get('date')
+        if not date_str:
+            day = datetime.now().date()
+        else:
+            try:
+                day = parse_date(date_str)
+            except ValueError:
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=400)
+        
+        try:
+            obj = DailyAnalytics.objects.get(date=day)
+            return Response(DailyAnalyticsSerializer(obj).data)
+        except DailyAnalytics.DoesNotExist:
+            return Response({"error": "No analytics data for this date"}, status=404)
+
+class MonthlyAnalyticsView(APIView):
+    def get(self, request):
+        month_str = request.query_params.get('month')
+        
+        if not month_str:
+            # If no month provided, use current month
+            current_date = datetime.now()
+            month_date = current_date.replace(day=1)
+        else:
+            try:
+                # Convert month string to integer
+                month_num = int(month_str)
+                if not 1 <= month_num <= 12:
+                    return Response({"error": "Month must be between 1 and 12"}, status=400)
+                
+                # Create date with provided month and current year
+                current_date = datetime.now()
+                month_date = current_date.replace(month=month_num, day=1)
+            except ValueError:
+                return Response({"error": "Invalid month format. Use 1-12"}, status=400)
+        
+        try:
+            obj = MonthlyAnalytics.objects.get(month=month_date)
+            return Response(MonthlyAnalyticsSerializer(obj).data)
+        except MonthlyAnalytics.DoesNotExist:
+            return Response({"error": "No analytics data for this month"}, status=404)
+
+class LifetimeAnalyticsView(APIView):
+    def get(self, request):
+        try:
+            obj = LifetimeAnalytics.objects.get(id=1)
+            return Response(LifetimeAnalyticsSerializer(obj).data)
+        except LifetimeAnalytics.DoesNotExist:
+            return Response({"error": "No lifetime analytics data found"}, status=404)
+
 class AnalyticsView(APIView):
     permission_classes = [IsAdmin]  # or a custom permission
 
