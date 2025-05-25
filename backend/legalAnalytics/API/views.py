@@ -19,6 +19,7 @@ from datetime import datetime
 from django.utils.dateparse import parse_date
 
 class DailyAnalyticsView(APIView):
+    permission_classes = [IsAdmin]
     def get(self, request):
         date_str = request.query_params.get('date')
         if not date_str:
@@ -36,6 +37,7 @@ class DailyAnalyticsView(APIView):
             return Response({"error": "No analytics data for this date"}, status=404)
 
 class MonthlyAnalyticsView(APIView):
+    permission_classes = [IsAdmin]
     def get(self, request):
         month_str = request.query_params.get('month')
         
@@ -63,6 +65,7 @@ class MonthlyAnalyticsView(APIView):
             return Response({"error": "No analytics data for this month"}, status=404)
 
 class LifetimeAnalyticsView(APIView):
+    permission_classes = [IsAdmin]
     def get(self, request):
         try:
             obj = LifetimeAnalytics.objects.get(id=1)
