@@ -58,7 +58,7 @@ class CaseListCreateAV(APIView):
         return Response(response.to_dict(), status=response.status_code)
     
 class CaseDetailAV(APIView):
-    permission_classes = [IsClientOrAdmin]
+    permission_classes = [IsClientOrAdminOrAttorney]
 
     def get_object(self, pk, user):
         try:
@@ -66,6 +66,36 @@ class CaseDetailAV(APIView):
             return case
         except Case.DoesNotExist:
             return None
+        
+    def get(self, request, pk):
+        response = BaseResponse()
+
+        try:
+            case = Case.objects.get(id=pk)
+        except Case.DoesNotExist:
+            response.update(404, False, "Case not found")
+            return Response(response.to_dict(), status=response.status_code)
+
+        if case.user == request.user:
+            pass  # client owns the case
+
+        elif request.user.role == "attorney":
+            case_request_exists = CaseRequest.objects.filter(
+                case=case,
+                attorney=request.user
+            ).exists()
+
+            if not case_request_exists:
+                response.update(403, False, "Permission denied: no valid case request")
+                return Response(response.to_dict(), status=response.status_code)
+        else:
+            response.update(403, False, "Permission denied")
+            return Response(response.to_dict(), status=response.status_code)
+
+        # Authorized
+        serializer = CaseSerializer(case)
+        response.update(200, True, "Case retrieved successfully", serializer.data)
+        return Response(response.to_dict(), status=response.status_code)
 
     def patch(self, request, pk):
         response = BaseResponse()
