@@ -33,7 +33,7 @@ from legalUser.models import (
     Experience,
     OTP)
 from legalUser.common.commonresponse import BaseResponse
-from legalUser.common.otpgenerator import verify_OTP_Template, createOTP
+from legalUser.common.otpgenerator import verify_OTP_Template, createOTP, account_status_update_template, request_received_template
 from utils.upload import upload_file
 
 
@@ -384,6 +384,10 @@ class ToggleAttorneyApprovalAV(APIView):
                     "attorney_id": str(attorney.id)
                 }
             )
+
+            status = "approved" if attorney.is_approved else "rejected"
+            html_content = account_status_update_template(user.role, status)
+            send_email("Probono Status Update",[user.email],"",html_content)
         except Attorney.DoesNotExist:
             response = BaseResponse(
                 status_code=404,
@@ -562,6 +566,9 @@ class ClientUploadProBonoRequestAV(APIView):
                 "probono_document": file_url,
                 "status": client.probono_status
             })
+
+            html_content = request_received_template(request.user.role)
+            send_email("Probono Status Update",[request.user.email],"",html_content)
         except Client.DoesNotExist:
             response.update(404, False, "Client profile not found")
         except Exception as e:
@@ -606,6 +613,8 @@ class AdminProBonoStatusUpdateAV(APIView):
             client.save()
 
             response.update(200, True, f"Client probono status updated to {status}")
+            html_content = account_status_update_template(user.role, status)
+            send_email("Probono Status Update",[user.email],"",html_content)
         except Client.DoesNotExist:
             response.update(404, False, "Client not found")
         except Exception as e:
