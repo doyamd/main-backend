@@ -2,8 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from legalCase.models import Case, CaseRequest
-from legalCase.API.serializers import CaseSerializer, CaseRequestSerializer, CaseRequestDecisionSerializer
-from legalUser.API.permissions import IsClientOrAdmin, IsClientOrAdminOrAttorney, IsAttorneyOrAdmin
+from legalCase.API.serializers import CaseSerializer, CaseRequestSerializer, CaseRequestDecisionSerializer, AttorneyWithCaseStatsSerializer
+from legalUser.API.permissions import IsClientOrAdmin, IsClientOrAdminOrAttorney, IsAttorneyOrAdmin, IsAdmin
 from legalUser.common.commonresponse import BaseResponse
 from utils.upload import upload_file
 from legalUser.models import Attorney, User
@@ -212,3 +212,11 @@ class CaseRequestDecisionView(APIView):
             message="Invalid data",
             data=serializer.errors
         ).to_dict())
+    
+class AttorneyWithCasesAPIView(APIView):
+    permission_classes = [IsAdmin] 
+
+    def get(self, request):
+        attorneys = Attorney.objects.all().select_related('user')
+        serializer = AttorneyWithCaseStatsSerializer(attorneys, many=True)
+        return Response({'attorneys': serializer.data})
