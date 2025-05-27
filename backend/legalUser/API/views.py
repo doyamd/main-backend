@@ -387,7 +387,7 @@ class ToggleAttorneyApprovalAV(APIView):
 
             status = "approved" if attorney.is_approved else "rejected"
             html_content = account_status_update_template(user.role, status)
-            send_email("Probono Status Update",[user.email],"",html_content)
+            send_email("Account Status Update",[user.email],"",html_content)
         except Attorney.DoesNotExist:
             response = BaseResponse(
                 status_code=404,
