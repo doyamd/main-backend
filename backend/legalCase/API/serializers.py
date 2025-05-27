@@ -10,6 +10,7 @@ class CaseSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'is_available', 'created_at', 'updated_at', 'document']
 
 
+
 class CaseRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = CaseRequest
@@ -84,3 +85,11 @@ class AttorneyWithCaseStatsSerializer(serializers.ModelSerializer):
             'declined': declined_count,
             'accepted_data': CaseSerializer(accepted_cases, many=True).data
         }
+
+
+class CaseWithUserSerializer(serializers.ModelSerializer):
+    user = UserMiniSerializer(read_only=True)
+    class Meta:
+        model = Case
+        fields = ['id', 'title', 'description', 'document', 'is_probono', 'is_available', 'created_at', 'updated_at', 'user']
+        read_only_fields = ['id', 'is_available', 'created_at', 'updated_at', 'document']

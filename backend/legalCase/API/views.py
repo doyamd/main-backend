@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from legalCase.models import Case, CaseRequest
-from legalCase.API.serializers import CaseSerializer, CaseRequestSerializer, CaseRequestDecisionSerializer, AttorneyWithCaseStatsSerializer
+from legalCase.API.serializers import CaseSerializer, CaseRequestSerializer, CaseRequestDecisionSerializer, AttorneyWithCaseStatsSerializer, CaseWithUserSerializer
 from legalUser.API.permissions import IsClientOrAdmin, IsClientOrAdminOrAttorney, IsAttorneyOrAdmin, IsAdmin
 from legalUser.common.commonresponse import BaseResponse
 from utils.upload import upload_file
@@ -62,7 +62,7 @@ class CaseDetailAV(APIView):
 
     def get_object(self, pk, user):
         try:
-            case = Case.objects.select_related('user').get(id=pk, user=user)
+            case = Case.objects.get(id=pk, user=user)
             return case
         except Case.DoesNotExist:
             return None
@@ -71,7 +71,8 @@ class CaseDetailAV(APIView):
         response = BaseResponse()
 
         try:
-            case = Case.objects.get(id=pk)
+            case = Case.objects.select_related('user').get(id=pk)
+            print(case)
         except Case.DoesNotExist:
             response.update(404, False, "Case not found")
             return Response(response.to_dict(), status=response.status_code)
@@ -93,7 +94,7 @@ class CaseDetailAV(APIView):
             return Response(response.to_dict(), status=response.status_code)
 
         # Authorized
-        serializer = CaseSerializer(case)
+        serializer = CaseWithUserSerializer(case)
         response.update(200, True, "Case retrieved successfully", serializer.data)
         return Response(response.to_dict(), status=response.status_code)
 
