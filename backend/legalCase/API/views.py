@@ -62,7 +62,7 @@ class CaseDetailAV(APIView):
 
     def get_object(self, pk, user):
         try:
-            case = Case.objects.get(id=pk, user=user)
+            case = Case.objects.select_related('user').get(id=pk, user=user)
             return case
         except Case.DoesNotExist:
             return None
