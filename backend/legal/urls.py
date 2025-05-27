@@ -39,6 +39,7 @@ urlpatterns = [
     path('api/', include('legalCase.API.urls')),
     path('api/', include('legalLaw.API.urls')),
     path('analytics/', include('legalAnalytics.API.urls')),
+    path('reviews/', include('legalReview.API.urls')),
     # Swagger URLs
     path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
